@@ -1,4 +1,4 @@
 # Advent of Code 2020
 
-Solutions to Advent of Code 2020 in Haskell
-https://adventofcode.com/
+Solutions to puzzles from https://adventofcode.com/ in Haskell
+
