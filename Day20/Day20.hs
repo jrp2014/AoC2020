@@ -1,56 +1,53 @@
 module Day20 where
 
-import Data.List ( group, sort, transpose )
+-- https://github.com/MatthiasCoppens/AOC2020/blob/master/day20/solution.hs
+import Data.List (transpose)
 import Data.List.Split
 
-data Tile = Tile { tileID :: Int, pixels :: [ [ Char ] ] }
-    deriving ( Show )
+type Grid = [[Char]]
+
+data Tile = Tile {tileID :: Int, pixels :: Grid}
+  deriving (Show)
 
 parseTile :: String -> Tile
 parseTile s = Tile (read . init . last $ words idLine) tile
   where
     (idLine : tile) = lines s -- NB may neeed to remove trailing empty line
 
-parseTiles :: String -> [ Tile ]
+parseTiles :: String -> [Tile]
 parseTiles = map parseTile . splitOn "\n\n"
 
--- including flipped borders
-borders :: [ [ a ] ] -> [ [ a ] ]
-borders xy = edges ++ map reverse edges
+-- include flipped edges
+getEdges :: Tile -> Tile
+getEdges Tile {tileID = tileID, pixels = pixels} =
+  Tile
+    { tileID = tileID,
+      pixels = edges ++ map reverse edges
+    }
   where
-    edges = [ head xy, last xy, head xy', last xy' ]
-
-    xy' = transpose xy
-
-countOccurrences :: Ord a => [ a ] -> [ ( a, Int ) ]
-countOccurrences = map (\x -> ( head x, length x )) . group . sort
-
-keepOccurrences :: Ord b => Int -> [ b ] -> [ b ]
-keepOccurrences n = map fst . filter (\( _, c ) -> c == n) . countOccurrences
+    edges = [head pixels, last pixels, head pixels', last pixels']
+    pixels' = transpose pixels
 
 part1 :: String -> Int
-part1 s = product . keepOccurrences 4 $ concatMap findTileIds uniqueBorderOccurrences
+-- take the first 4 tiles that have two edges in commpn with other tiles
+part1 = product . take 4 . go . map getEdges . parseTiles
   where
-    tiles :: [Tile]
-    tiles = parseTiles s
-
-    borderOccurrences :: [[Char]]
-    borderOccurrences = concatMap (borders . pixels) tiles
-
-    uniqueBorderOccurrences :: [[Char]]
-    uniqueBorderOccurrences = keepOccurrences 1 borderOccurrences
-
-    findTileIds :: [Char] -> [Int]
-    findTileIds border = tileID <$> filter (\tile -> border `elem` borders (pixels tile))
-        tiles
+    go :: [Tile] -> [Int]
+    go (tile@Tile {tileID = n, pixels = edges} : rest)
+      -- retain the tileID of the tile if it has an edge in common
+      -- with the edges of up to 2 of the rest of the tiles (whether normal or reversed)
+      | null $ drop 2 $ filter (any (`elem` edges)) $ map pixels rest =
+        n : go (rest ++ [tile])
+      | otherwise = go (rest ++ [tile]) -- cycle through the list
 
 main :: IO ()
 main = do
-    input <- readFile "input.txt"
-    print $ part1 input
+  input <- readFile "input.txt"
+  print $ part1 input
 
 ex1 :: String
-ex1 = "Tile 2311:\n\
+ex1 =
+  "Tile 2311:\n\
   \..##.#..#.\n\
   \##..#.....\n\
   \#...##..#.\n\
