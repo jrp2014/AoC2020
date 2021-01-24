@@ -32,7 +32,7 @@ match :: Rules -> String -> Rule -> [String]
 match _ "" (Literal _) = []
 match _ (c' : rest) (Literal c)  = [rest | c' == c]
 match rules str (And ns) = foldM (\s n -> match rules s (rules IM.! n)) str ns
-match rules str (Or rs) = concatMap (match rules str) rs
+match rules str (Or rs) = rs >>= match rules str 
 
 matchRule0 :: (Rules, [String]) -> Int
 matchRule0 (rules, inputs) =
